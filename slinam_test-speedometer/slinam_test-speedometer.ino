@@ -7,18 +7,18 @@
 struct Encoders {
   uint16_t l_pulses;
   uint16_t r_pulses;
-  uint8_t  l_delta_pulses;
-  uint8_t  r_delta_pulses;
+  uint16_t l_delta_pulses;
+  uint16_t r_delta_pulses;
 };
 
-struct DeltaTime {
+struct TimeStuff {
   uint32_t millis_last;
   uint32_t millis_now;
   uint32_t millis_delta;
 };
 
 volatile Encoders enc = { 0 };
-DeltaTime dt = { 0 };
+TimeStuff dt = { 0 };
 
 char dbg_buffer[80];
 
@@ -57,8 +57,11 @@ void setup() {
 }
 
 void loop() {
-  
-  // test_calculate_speed();
+
+  sprintf(dbg_buffer, "millis_delta, _now, _last: %lu, %lu, %lu", 
+          dt.millis_delta, dt.millis_now, dt.millis_last);
+  Serial.println(dbg_buffer);
+
   delay(1000);
 }
 
@@ -74,16 +77,11 @@ void test_calculate_speed() {
   l_speed = (float)enc.l_delta_pulses / ((float)dt.millis_delta * 1000);
   r_speed = (float)enc.r_delta_pulses / ((float)dt.millis_delta * 1000);
 
-  // sprintf(dbg_buffer, "millis_delta: %d, %d, %d", dt.millis_delta, 
-  //         dt.millis_now, dt.millis_last);
-  // Serial.println(dbg_buffer);
-  Serial.println(dt.millis_now);
-  Serial.println(dt.millis_last);
-  Serial.println(dt.millis_delta);
-  // sprintf(dbg_buffer, "dt encoders: %d, %d", enc.l_delta_pulses, 
-  //         enc.r_delta_pulses);
-  sprintf(dbg_buffer, "dt encoders: %d, %d", enc.l_pulses, 
-          enc.r_pulses);
+  sprintf(dbg_buffer, "millis_delta: %d, %d, %d", dt.millis_delta, 
+          dt.millis_now, dt.millis_last);
+  Serial.println(dbg_buffer);
+  sprintf(dbg_buffer, "dt encoders: %d, %d", enc.l_delta_pulses, 
+          enc.r_delta_pulses);
   Serial.println(dbg_buffer);
   sprintf(dbg_buffer, "speeds: %s, %s", String(l_speed).c_str(), String(r_speed).c_str());
   Serial.println(dbg_buffer);
