@@ -2,7 +2,7 @@
 #include <TimerTwo.h>
 #include "slinam_test.h"
 
-#define TEST_RPM 20
+#define TEST_RPM 24
 
 struct Encoders {
   uint16_t l_pulses;
@@ -28,15 +28,15 @@ void setup() {
   }
 
   pinMode(LED_BUILTIN, OUTPUT);
-  
-  pinMode(ENCODER_A_PIN, INPUT_PULLUP);
-  pinMode(ENCODER_B_PIN, INPUT_PULLUP);
+
+  pinMode(ENCODER_A_PIN, INPUT);
+  pinMode(ENCODER_B_PIN, INPUT);
 
   // Encoder Interrupts
   attachInterrupt(digitalPinToInterrupt(ENCODER_A_PIN),
-                  encoder_left_pulse, FALLING);
+                  encoder_left_pulse, CHANGE);
   attachInterrupt(digitalPinToInterrupt(ENCODER_B_PIN),
-                  encoder_right_pulse, FALLING);
+                  encoder_right_pulse, CHANGE);
 
   // Realization: it's better to just periodically check
   //              how much it has changed and just calculate
@@ -48,46 +48,32 @@ void setup() {
   // Timer1.attachInterrupt(encoder_get_speed);
 
   Serial.begin(115200);
-  
+
   Serial.println("SLINAM v1.0: test-speed");
   Serial.println("Testing printing out speed correctly.");
 
-  // run_motors(TEST_RPM, MOTOR_A_PINA, MOTOR_A_PINB, MOTOR_A_PWM);
-  // run_motors(TEST_RPM, MOTOR_B_PINA, MOTOR_B_PINB, MOTOR_B_PWM);
+  run_motors(TEST_RPM, MOTOR_A_PINA, MOTOR_A_PINB, MOTOR_A_PWM);
 }
+
+unsigned int last_pulses;
 
 void loop() {
+  unsigned int delt_pulses = enc.l_pulses - last_pulses;
 
-  sprintf(dbg_buffer, "millis_delta, _now, _last: %lu, %lu, %lu", 
-          dt.millis_delta, dt.millis_now, dt.millis_last);
-  Serial.println(dbg_buffer);
+  Serial.print("left rps: ");
+  Serial.println(delt_pulses / ENCODER_SLOT_COUNT);
+  Serial.println(delt_pulses);
+  Serial.println(enc.l_pulses);
+
+  last_pulses = enc.l_pulses;
 
   delay(1000);
-}
 
-void test_calculate_speed() {
-  float l_speed = 0;
-  float r_speed = 0;
+  // sprintf(dbg_buffer, "millis_delta, _now, _last: %lu, %lu, %lu",
+  //         dt.millis_delta, dt.millis_now, dt.millis_last);
+  // Serial.println(dbg_buffer);
 
-  dt.millis_now = millis();
-  dt.millis_delta = dt.millis_now - dt.millis_last;
-  encoder_get_speed();
-  dt.millis_last = dt.millis_now;
+  // test_calculate_speed();
 
-  l_speed = (float)enc.l_delta_pulses / ((float)dt.millis_delta * 1000);
-  r_speed = (float)enc.r_delta_pulses / ((float)dt.millis_delta * 1000);
-
-  sprintf(dbg_buffer, "millis_delta: %d, %d, %d", dt.millis_delta, 
-          dt.millis_now, dt.millis_last);
-  Serial.println(dbg_buffer);
-  sprintf(dbg_buffer, "dt encoders: %d, %d", enc.l_delta_pulses, 
-          enc.r_delta_pulses);
-  Serial.println(dbg_buffer);
-  sprintf(dbg_buffer, "speeds: %s, %s", String(l_speed).c_str(), String(r_speed).c_str());
-  Serial.println(dbg_buffer);
-  Serial.println();
-}
-
-void test_timer_cb() {
-  digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
+  // delay(1000);
 }

@@ -3,89 +3,154 @@
 #define ENCODER_A_PIN 2
 #define ENCODER_B_PIN 3
 
+#define MOTOR_A_PWM 9
+#define MOTOR_B_PWM 10
+
+#define MOTOR_A_PINA 4
+#define MOTOR_A_PINB 5
+#define MOTOR_B_PINA 6
+#define MOTOR_B_PINB 7
+
+
 struct Encoders {
-  int l_pulses;
-  int r_pulses;
-  float l_speed;
-  float r_speed;
+  uint16_t l_pulses;
+  uint16_t r_pulses;
 };
 
 Encoders enc = { 0 };
 
+char dbg_buffer[80];
+
+byte motor_pwm = 0;
+
 void setup() {
+
+  pinMode(ENCODER_A_PIN, INPUT);
+  pinMode(ENCODER_B_PIN, INPUT);
+
   // Encoder Interrupts
   attachInterrupt(digitalPinToInterrupt(ENCODER_A_PIN),
                   encoder_left_pulse, RISING);
   attachInterrupt(digitalPinToInterrupt(ENCODER_B_PIN),
                   encoder_right_pulse, RISING);
 
-  // Timer Interrupts (Speedometer) every 0.1s
-  Timer1.initialize(100000); // time until next check for speed (in us)
-  Timer1.attachInterrupt(encoder_get_speed);
+  // // Timer Interrupts (Speedometer) every 0.1s
+  // Timer1.initialize(100000);  // time until next check for speed (in us)
+  // Timer1.attachInterrupt(encoder_get_speed);
 
   Serial.begin(115200);
-  
+
   Serial.println("SLINAM v1.0: test-encoders");
   Serial.println("Testing encoder ticking and track speed.");
 
+  test_setup_motors();
+  test_run_motors();
 }
 
+
+uint32_t timeout;
+
 void loop() {
-  delay(600);
-  Serial.print('[');
-  Serial.print((float)millis() / 1000);
-  Serial.print("]: ");
-  
-  Serial.print("left speed, right speed: ");
-  Serial.print(enc.l_speed);
-  Serial.print(',');
-  Serial.println(enc.r_speed);
+
+  if (Serial.available() > 0) {
+    char key_press = Serial.read();
+    switch (key_press) {
+      case 'h':
+        motor_pwm = 0;
+        break;
+      case 'j':
+        motor_pwm--;
+        break;
+      case 'k':
+        motor_pwm++;
+        break;
+      case 'l':
+        motor_pwm = 255;
+        break;
+    }
+    Serial.print("Motor PWM: ");
+    Serial.println(motor_pwm);
+    test_run_motors();
+  }
+  // delay(600);
+  // Serial.print('[');
+  // Serial.print((float)millis() / 1000);
+  // Serial.print("]: ");
+
+  // Serial.print("left speed, right speed: ");
+  // Serial.print(enc.l_speed);
+  // Serial.print(',');
+  // Serial.println(enc.r_speed);
+  if (millis() - timeout >= 1000) {
+    encoder_get_speed();
+    timeout = millis();
+  }
 }
 
 void encoder_get_speed() {
+  static uint32_t millis_last;
 
-  static int   l_pulses_last, r_pulses_last;
-  static int   l_pulses_curr, r_pulses_curr;
-  static int   l_delta_pulses, r_delta_pulses = 0;
-  static float l_speed, r_speed = 0;
+  static uint16_t l_curr_pulses, r_curr_pulses;
+  static uint16_t l_last_pulses, r_last_pulses;
+  uint16_t l_delt_pulses, r_delt_pulses;
 
-  Timer1.detachInterrupt();
+
   detachInterrupt(digitalPinToInterrupt(ENCODER_A_PIN));
   detachInterrupt(digitalPinToInterrupt(ENCODER_B_PIN));
-
-  // i don't like it when there are global variables
-  // in the function stuff
-  // i know it's slow, just shush pls.
-  l_pulses_curr = enc.l_pulses;
-  r_pulses_curr = enc.r_pulses;
-
-  l_delta_pulses = l_pulses_curr - l_pulses_last;
-  r_delta_pulses = r_pulses_curr - r_pulses_last;
-
-  l_speed = (float)l_delta_pulses;
-  r_speed = (float)r_delta_pulses;
-
-  l_pulses_last = l_pulses_curr;
-  r_pulses_last = r_pulses_curr;
-
-  enc.l_speed = l_speed;
-  enc.r_speed = r_speed;
-
+  l_curr_pulses = enc.l_pulses;
+  r_curr_pulses = enc.r_pulses;
   attachInterrupt(digitalPinToInterrupt(ENCODER_A_PIN),
                   encoder_left_pulse, RISING);
   attachInterrupt(digitalPinToInterrupt(ENCODER_B_PIN),
                   encoder_right_pulse, RISING);
-  Timer1.attachInterrupt(encoder_get_speed);
+
+  l_delt_pulses = l_curr_pulses - l_last_pulses;
+  r_delt_pulses = r_curr_pulses - r_last_pulses;
+
+  l_last_pulses = l_curr_pulses;
+  r_last_pulses = r_curr_pulses;
+
+  float l_speed = (float)l_delt_pulses / (float)(millis() - millis_last);
+  float r_speed = (float)r_delt_pulses / (float)(millis() - millis_last);
+
+  sprintf(dbg_buffer, "left  rps, rpm: %s, %s",
+          String(l_speed).c_str(), String(l_speed * 60).c_str());
+  Serial.println(dbg_buffer);
+
+  sprintf(dbg_buffer, "right rps, rpm: %s, %s",
+          String(r_speed).c_str(), String(r_speed * 60).c_str());
+  Serial.println(dbg_buffer);
+  Serial.println();
+
+  millis_last = millis();
 }
 
 void encoder_left_pulse() {
-  enc.l_pulses++;  
+  enc.l_pulses++;
   // Serial.print("left pulses: ");
   // Serial.println(enc.l_pulses);
 }
 
 void encoder_right_pulse() {
-  enc.r_pulses++;  
+  enc.r_pulses++;
   // Serial.print("right pulses: ");
   // Serial.println(enc.r_pulses);
+}
+
+void test_setup_motors() {
+  pinMode(MOTOR_A_PINA, OUTPUT);
+  pinMode(MOTOR_A_PINB, OUTPUT);
+  pinMode(MOTOR_B_PINA, OUTPUT);
+  pinMode(MOTOR_B_PINB, OUTPUT);
+}
+
+void test_run_motors() {
+
+  analogWrite(MOTOR_A_PWM, motor_pwm);
+  analogWrite(MOTOR_B_PWM, motor_pwm);
+
+  digitalWrite(MOTOR_A_PINA, HIGH);
+  digitalWrite(MOTOR_A_PINB, LOW);
+  digitalWrite(MOTOR_B_PINA, HIGH);
+  digitalWrite(MOTOR_B_PINB, LOW);
 }
