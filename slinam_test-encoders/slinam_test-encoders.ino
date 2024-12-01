@@ -1,5 +1,6 @@
 #include <TimerOne.h>
 
+#define ENCODERR_SLOT_COUNT 20
 #define ENCODER_A_PIN 2
 #define ENCODER_B_PIN 3
 
@@ -10,7 +11,6 @@
 #define MOTOR_A_PINB 5
 #define MOTOR_B_PINA 6
 #define MOTOR_B_PINB 7
-
 
 struct Encoders {
   uint16_t l_pulses;
@@ -110,8 +110,17 @@ void encoder_get_speed() {
   l_last_pulses = l_curr_pulses;
   r_last_pulses = r_curr_pulses;
 
-  float l_speed = (float)l_delt_pulses / (float)(millis() - millis_last);
-  float r_speed = (float)r_delt_pulses / (float)(millis() - millis_last);
+  float sec_curr = (float)millis() / 1000.00;
+  float sec_last = (float)millis_last / 1000.00;
+  float sec_delt = (float)(millis() - millis_last);
+  float l_speed = (float)l_delt_pulses;
+  float r_speed = (float)r_delt_pulses;
+
+  sprintf(dbg_buffer, "sec_curr, _last, _delta, %d, %d, %s",
+          String(sec_curr, 6).c_str(),
+          String(sec_last, 6).c_str(),
+          String(sec_delt, 6).c_str());
+  Serial.println(dbg_buffer);
 
   sprintf(dbg_buffer, "left  rps, rpm: %s, %s",
           String(l_speed).c_str(), String(l_speed * 60).c_str());
@@ -151,6 +160,6 @@ void test_run_motors() {
 
   digitalWrite(MOTOR_A_PINA, HIGH);
   digitalWrite(MOTOR_A_PINB, LOW);
-  digitalWrite(MOTOR_B_PINA, HIGH);
-  digitalWrite(MOTOR_B_PINB, LOW);
+  digitalWrite(MOTOR_B_PINA, LOW);
+  digitalWrite(MOTOR_B_PINB, HIGH);
 }
