@@ -1,6 +1,6 @@
 #include <TimerOne.h>
 
-#define ENCODERR_SLOT_COUNT 20
+#define ENCODER_SLOT_COUNT 20
 #define ENCODER_A_PIN 2
 #define ENCODER_B_PIN 3
 
@@ -49,6 +49,7 @@ void setup() {
 
 
 uint32_t timeout;
+int minus_factor;
 
 void loop() {
 
@@ -66,6 +67,12 @@ void loop() {
         break;
       case 'l':
         motor_pwm = 255;
+        break;
+      case 'J':
+        minus_factor--;
+        break;
+      case 'K':
+        minus_factor++;
         break;
     }
     Serial.print("Motor PWM: ");
@@ -113,14 +120,14 @@ void encoder_get_speed() {
   float sec_curr = (float)millis() / 1000.00;
   float sec_last = (float)millis_last / 1000.00;
   float sec_delt = (float)(millis() - millis_last);
-  float l_speed = (float)l_delt_pulses;
-  float r_speed = (float)r_delt_pulses;
+  float l_speed = (float)l_delt_pulses / ENCODER_SLOT_COUNT;
+  float r_speed = (float)r_delt_pulses / ENCODER_SLOT_COUNT;
 
-  sprintf(dbg_buffer, "sec_curr, _last, _delta, %d, %d, %s",
-          String(sec_curr, 6).c_str(),
-          String(sec_last, 6).c_str(),
-          String(sec_delt, 6).c_str());
-  Serial.println(dbg_buffer);
+  // sprintf(dbg_buffer, "sec_curr, _last, _delta, %d, %d, %s",
+  //         String(sec_curr, 6).c_str(),
+  //         String(sec_last, 6).c_str(),
+  //         String(sec_delt, 6).c_str());
+  // Serial.println(dbg_buffer);
 
   sprintf(dbg_buffer, "left  rps, rpm: %s, %s",
           String(l_speed).c_str(), String(l_speed * 60).c_str());
@@ -129,6 +136,10 @@ void encoder_get_speed() {
   sprintf(dbg_buffer, "right rps, rpm: %s, %s",
           String(r_speed).c_str(), String(r_speed * 60).c_str());
   Serial.println(dbg_buffer);
+
+  sprintf(dbg_buffer, "minus facto: %d", minus_factor);
+  Serial.println(dbg_buffer);
+
   Serial.println();
 
   millis_last = millis();
@@ -156,7 +167,7 @@ void test_setup_motors() {
 void test_run_motors() {
 
   analogWrite(MOTOR_A_PWM, motor_pwm);
-  analogWrite(MOTOR_B_PWM, motor_pwm);
+  analogWrite(MOTOR_B_PWM, motor_pwm - minus_factor);
 
   digitalWrite(MOTOR_A_PINA, HIGH);
   digitalWrite(MOTOR_A_PINB, LOW);

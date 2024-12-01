@@ -6,7 +6,7 @@ struct Encoders {
 
 Encoders enc = { 0 };
 
-float encoder_get_rpm() {
+float encoder_get_rpm(int which_motor) {
   static uint32_t millis_last;
 
   static uint16_t l_curr_pulses, r_curr_pulses;
@@ -37,13 +37,17 @@ float encoder_get_rpm() {
   float l_rps = ((float)l_delt_pulses / ENCODER_SLOT_COUNT);
   float r_rps = ((float)r_delt_pulses / ENCODER_SLOT_COUNT);
 
-  Serial.print("hello from encoder_get_rpm!");
-  // Serial.println(millis() - millis_last);
-  Serial.println(l_rps, 6);
+  // Serial.print("hello from encoder_get_rpm!");
+  // // Serial.println(millis() - millis_last);
+  // Serial.println(l_rps, 6);
 
   millis_last = millis();
 
-  return l_rps * 60;
+  if (which_motor == MOTOR_A_RPM) {
+    return l_rps * 60;
+  } else if (which_motor == MOTOR_B_RPM) {
+    returrn r_rps * 60;
+  }
 }
 
 void encoder_left_pulse() {

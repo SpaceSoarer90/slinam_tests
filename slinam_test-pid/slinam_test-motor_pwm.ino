@@ -2,6 +2,10 @@
 // assumes 8-bit resolution for pwm
 uint8_t rpm_to_pwm(int rpm) {
   byte pwm = abs((float(rpm) / MOTOR_MAX_RPM) * 255);
+  Serial.print("hello from rpm_to_pwm!: ");
+  Serial.print(rpm);
+  Serial.print(", ");
+  Serial.println(pwm);
   return pwm;
 }
 
